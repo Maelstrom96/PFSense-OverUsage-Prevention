@@ -88,7 +88,7 @@ module.exports = function(app) {
 
       async.forEachOf(results, function (value, key, callback) {
         // Check if the value is null
-        if (typeof value !== 'undefined') {
+        if (value != null) {
           returnObj[key] = value;
           return callback();
         }
