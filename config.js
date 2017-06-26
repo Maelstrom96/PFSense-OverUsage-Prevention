@@ -18,6 +18,10 @@ module.exports = {
 			}
 		}
 	},
+
+	webserver: {
+		port: 80
+	},
 	// Monthly allocation in GB
 	datacap: '250',
 	// Check interval in milliseconds
