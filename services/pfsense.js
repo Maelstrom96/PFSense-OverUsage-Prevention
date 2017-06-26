@@ -244,7 +244,6 @@ module.exports = {
         for (let key of Object.keys(results)) {
           if (highestQuota == null) highestQuota = results[key];
           else if (results[key] > highestQuota) highestQuota = results[key];
-          console.log('key -> ' + key + ', value -> ' + results[key]);
         }
 
         return callback(null, highestQuota);
