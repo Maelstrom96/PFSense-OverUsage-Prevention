@@ -45,6 +45,9 @@
         $('#text-current-quota-left').text(result.currentDayQuotaLeft.text + ' left');
       }
 
+      // Setup loop
+      loopTimeout = setInterval(updateLoop, 60000);
+      // Call loop immediately
       updateLoop();
     </script>
 </head>
