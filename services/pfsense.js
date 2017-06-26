@@ -1,5 +1,6 @@
 'use strict';
 
+const async = require('async');
 var config = require(__base + 'config.js');
 var https = require('https');
 var querystring = require('querystring');
@@ -202,19 +203,52 @@ module.exports = {
   },
 
   getTodayQuota: function(callback) {
-  	module.exports.getMonthQuotaLeft(function(err, monthBytesLeft) {
-  		if (err) return callback(err);
-  		module.exports.getTodayUsageBytes(function(err, todayBytes) {
-  			if (err) return callback(err);
+    async.parallel({
+      // This returns the average GB per day for the number of GB left this month
+      averageLeft: function(callback) {
+      	module.exports.getMonthQuotaLeft(function(err, monthBytesLeft) {
+      		if (err) return callback(err);
+      		module.exports.getTodayUsageBytes(function(err, todayBytes) {
+      			if (err) return callback(err);
 
-  			// This is the Quota that was remaining at 00:00 today
-  			let quotaLeft = monthBytesLeft + todayBytes;
+      			// This is the Quota that was remaining at 00:00 today
+      			let quotaLeft = monthBytesLeft + todayBytes;
 
-  			let averageQuotaLeft = quotaLeft / module.exports.getDaysLeftMonth();
+      			let averageQuotaLeft = quotaLeft / module.exports.getDaysLeftMonth();
 
-  			return callback(null, averageQuotaLeft);
-  		});
-  	});
+      			return callback(null, averageQuotaLeft);
+      		});
+      	});
+      },
+      // This function returns the number of gigabytes left if you had a fixed amount of data per day (Like a cumulative quota bank)
+      averagePerDay: function(callback) {
+        let today = new Date();
+        let daysInCurrentMonth = module.exports.getDaysInCurrentMonth();
+        let currentMonthQuotaBytes = module.exports.getMonthQuotaBytes();
+        let currentMonthDay = today.getDate();
+
+        module.exports.getCurrentMonthUsage(function(err, monthUsage) {
+          if (err) return callback(err);
+
+
+          let averagePerDay = currentMonthQuotaBytes / daysInCurrentMonth;
+          let totalCurrentQuotaBank = averagePerDay * currentMonthDay;
+
+          return callback(null, totalCurrentQuotaBank - monthUsage);
+        });
+      }
+    }, function(err, results) {
+        // Take the highest value since averagePerDay could be, in theory, a negative number if you busted the cumulative quota, but there's still quota left this month
+        let highestQuota = null;
+
+        for (let key of Object.keys(results)) {
+          if (highestQuota == null) highestQuota = results[key];
+          else if (results[key] > highestQuota) highestQuota = results[key];
+          console.log('key -> ' + key + ', value -> ' + results[key]);
+        }
+
+        return callback(null, highestQuota);
+    });
   },
 
   getTodayQuotaLeft: function(callback) {
@@ -238,6 +272,11 @@ module.exports = {
   		let currentMonthBytes = monthUsage;
   		return callback(null, module.exports.getMonthQuotaBytes() - currentMonthBytes);
   	});
+  },
+
+  getDaysInCurrentMonth: function() {
+    let today = new Date();
+  	return module.exports.getDaysInMonth(today.getMonth(), today.getYear());
   },
 
   getDaysLeftMonth: function() {
