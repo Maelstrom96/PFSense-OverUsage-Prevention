@@ -19,6 +19,12 @@ module.exports = function(app) {
       daysLeft: function(callback) {
         return callback(null, services.pfsense.getDaysLeftMonth());
       },
+      // Days in the current billing month
+      daysInCurrentMonth: function(callback) {
+        let today = new Date();
+
+        return callback(null, services.pfsense.getDaysInMonth(today.getMonth(), today.getYear()));
+      },
       //
       currentMonthUsage: function(callback) {
         services.pfsense.getCurrentMonthUsage(function(err, monthUsage) {
