@@ -5,6 +5,50 @@
 <head>
     <% include ../partials/head %>
     <script src="https://code.jquery.com/jquery-3.2.1.min.js"></script>
+
+    <script>
+      const updateLoop = function() {
+        setDataValues();
+
+        loopTimeout = setInterval(updateLoop, 60000);
+      }
+
+      const setDataValues = function() {
+        $.ajax({url: "/api/stats/get/json", success: function(result){
+          setProgressMonth(result);
+          setMonthUsage(result);
+          setCurrentUsage(result);
+        }});
+      }
+
+      const setProgressMonth = function(result) {
+        var percentage = 100 - Math.round((result.daysLeft / result.daysInCurrentMonth) * 100);
+
+        $('#progress-days').css('width', percentage+'%').attr('aria-valuenow', percentage);
+        $('#text-month-days').text(result.daysInCurrentMonth + ' days');
+        $('#text-days-left').text(result.daysLeft + ' days left');
+      }
+
+      const setMonthUsage = function(result) {
+        var percentage = Math.round((result.currentMonthUsage.bytes / result.monthQuota.bytes) * 100);
+
+        $('#progress-month-quota').css('width', percentage+'%').attr('aria-valuenow', percentage);
+        $('#progress-month-quota').text(result.currentMonthUsage.text + ' used');
+        $('#text-total-quota').text(result.monthQuota.text);
+        $('#text-used-quota').text(result.currentMonthQuotaLeft.text + ' left');
+      }
+
+      const setCurrentUsage = function(result) {
+        var percentage = Math.round((result.currentDayUsage.bytes / result.currentDayQuota.bytes) * 100);
+
+        $('#progress-current-usage').css('width', percentage+'%').attr('aria-valuenow', percentage);
+        $('#progress-current-usage').text(result.currentDayUsage.text + ' used');
+        $('#text-current-quota').text(result.currentDayQuota.text);
+        $('#text-current-quota-left').text(result.currentDayQuotaLeft.text + ' left');
+      }
+
+      updateLoop();
+    </script>
 </head>
 <body class="container">
 
@@ -13,10 +57,53 @@
     </header>
 
     <main>
-        <div class="jumbotron">
-            <h1>This is great</h1>
-            <p>Welcome to templating using EJS</p>
+      <div class="jumbotron">
+        <h1>Internet Usage Report</h1>
+        <hr>
+        <div>
+          <div style="width: 45%; display: inline-block;">
+            <span style="font-weight: bold;">Usage Period: </span>
+            <span id="text-month-days"></span>
+          </div>
+          <div style="float: right;">
+            <span id="text-days-left"></span>
+          </div>
+          <div class="progress">
+            <div id="progress-days" class="progress-bar" role="progressbar">
+            </div>
+          </div>
         </div>
+        <hr>
+        <h3>Month Usage</h3>
+        <div>
+          <div style="width: 45%; display: inline-block;">
+            <span style="font-weight: bold;">Total Quota: </span>
+            <span id="text-total-quota"></span>
+          </div>
+          <div style="float: right;">
+            <span id="text-used-quota"></span>
+          </div>
+          <div class="progress">
+            <div id="progress-month-quota" class="progress-bar" role="progressbar">
+            </div>
+          </div>
+        </div>
+        <hr>
+        <h3>Current Day Usage</h3>
+        <div>
+          <div style="width: 45%; display: inline-block;">
+            <span style="font-weight: bold;">Total Quota for Today: </span>
+            <span id="text-current-quota"></span>
+          </div>
+          <div style="float: right;">
+            <span id="text-current-quota-left"></span>
+          </div>
+          <div class="progress">
+            <div id="progress-current-usage" class="progress-bar" role="progressbar">
+            </div>
+          </div>
+        </div>
+      </div>
     </main>
 
     <footer>
