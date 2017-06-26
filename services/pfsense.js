@@ -101,7 +101,7 @@ module.exports = {
   },
 
   applyFirewallRule: function(callback) {
-  	this.getCSRFToken(function(err, csrfToken) {
+  	module.exports.getCSRFToken(function(err, csrfToken) {
   		let body = '';
 
   		let post_data = querystring.stringify({
@@ -190,7 +190,7 @@ module.exports = {
   },
 
   getMonthQuotaBytes: function() {
-  	return config.datacap * 1024 * 1024 * 1024;
+  	return config.datacap * Math.pow(1024, 3);
   },
 
   getDaysInMonth: function(month,year) {
@@ -202,15 +202,15 @@ module.exports = {
   },
 
   getTodayQuota: function(callback) {
-  	this.getMonthQuotaLeft(function(err, monthBytesLeft) {
+  	module.exports.getMonthQuotaLeft(function(err, monthBytesLeft) {
   		if (err) return callback(err);
-  		this.getTodayUsageBytes(function(err, todayBytes) {
+  		module.exports.getTodayUsageBytes(function(err, todayBytes) {
   			if (err) return callback(err);
 
   			// This is the Quota that was remaining at 00:00 today
   			let quotaLeft = monthBytesLeft + todayBytes;
 
-  			let averageQuotaLeft = quotaLeft / getDaysLeftMonth();
+  			let averageQuotaLeft = quotaLeft / module.exports.getDaysLeftMonth();
 
   			return callback(null, averageQuotaLeft);
   		});
@@ -218,9 +218,9 @@ module.exports = {
   },
 
   getTodayQuotaLeft: function(callback) {
-  	this.getTodayQuota(function(err, todayQuotaBytes) {
+  	module.exports.getTodayQuota(function(err, todayQuotaBytes) {
   		if (err) return callback(err);
-  		this.getTodayUsageBytes(function(err, todayBytes) {
+  		module.exports.getTodayUsageBytes(function(err, todayBytes) {
   			if (err) return callback(err);
 
   			let todayQuotaLeftBytes = todayQuotaBytes - todayBytes;
@@ -232,17 +232,17 @@ module.exports = {
 
   // Return current month quota left in Bytes
   getMonthQuotaLeft: function(callback) {
-  	this.getCurrentMonthUsage(function(err, monthUsage) {
+  	module.exports.getCurrentMonthUsage(function(err, monthUsage) {
   		if (err) return callback(err);
 
-  		let currentMonthBytes = monthUsage * 1024;
-  		return callback(null, this.getMonthQuotaBytes() - currentMonthBytes);
+  		let currentMonthBytes = monthUsage;
+  		return callback(null, module.exports.getMonthQuotaBytes() - currentMonthBytes);
   	});
   },
 
   getDaysLeftMonth: function() {
   	let today = new Date();
-  	let daysInCurrentMonth = this.getDaysInMonth(today.getMonth(), today.getYear());
+  	let daysInCurrentMonth = module.exports.getDaysInMonth(today.getMonth(), today.getYear());
   	return (daysInCurrentMonth - today.getDate()) + 1;
   },
 
@@ -292,18 +292,18 @@ module.exports = {
   },
 
   getCurrentMonthUsage: function(callback) {
-  	this.getNetworkUsageStats(function(err, reply) {
+  	module.exports.getNetworkUsageStats(function(err, reply) {
   		if (err) return callback(err);
 
-  		let currentMonthBits = reply.data.interfaces[0].traffic.months[0].rx;
-  		currentMonthBits += reply.data.interfaces[0].traffic.months[0].tx;
+  		let currentMonthBytes = reply.data.interfaces[0].traffic.months[0].rx * 1024;
+  		currentMonthBytes += reply.data.interfaces[0].traffic.months[0].tx * 1024;
 
-  		return callback(null, currentMonthBits);
+  		return callback(null, currentMonthBytes);
   	});
   },
 
   getTodayUsageBytes: function(callback) {
-  	this.getNetworkUsageStats(function(err, reply) {
+  	module.exports.getNetworkUsageStats(function(err, reply) {
   		if (err) return callback(err);
 
   		let todayBytes = reply.data.interfaces[0].traffic.days[0].rx;

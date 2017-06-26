@@ -13,7 +13,7 @@ var checkTimeout;
 const check = function() {
 	services.pfsense.getCurrentMonthUsage(function(err, monthUsage) {
 		console.log('Number of days left: ' + services.pfsense.getDaysLeftMonth());
-		console.log('This Month Usage: ' + pretty(monthUsage * 1024, false, false, 3));
+		console.log('This Month Usage: ' + pretty(monthUsage, false, false, 3));
 		services.pfsense.getTodayUsageBytes(function(err, todayUsage) {
 			console.log('Today Usage: ' + pretty(todayUsage, false, false, 3));
 			services.pfsense.getMonthQuotaLeft(function(err, bytesLeft) {
