@@ -1,0 +1,29 @@
+{
+  "name": "pfsense-overusage-prevention",
+  "version": "0.0.1",
+  "description": "Manage the data usage on a PFSense firewall.",
+  "main": "app.js",
+  "scripts": {
+    "test": "echo \"Error: no test specified\" && exit 1"
+  },
+  "repository": {
+    "type": "git",
+    "url": "git+https://github.com/Maelstrom96/PFSense-OverUsage-Prevention.git"
+  },
+  "keywords": [
+    "PFSense",
+    "Data",
+    "Datacap",
+    "Usage",
+    "Monitoring"
+  ],
+  "author": "Alexandre-Jacques St-Jacques",
+  "license": "MIT",
+  "bugs": {
+    "url": "https://github.com/Maelstrom96/PFSense-OverUsage-Prevention/issues"
+  },
+  "homepage": "https://github.com/Maelstrom96/PFSense-OverUsage-Prevention#readme",
+  "dependencies": {
+    "prettysize": "^0.1.0"
+  }
+}
