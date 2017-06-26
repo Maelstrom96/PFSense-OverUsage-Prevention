@@ -1,13 +1,15 @@
 var config = require('./config.js');
+var express = require('express');
 var pretty = require('prettysize');
 var https = require('https');
 var querystring = require('querystring');
+var app = express();
 
 var checkTimeout;
 
 const getCSRFToken = function(callback) {
 	let body = "";
-	
+
 	let options = {
 	  host: config.pfsense.host,
 	  port: config.pfsense.port,
@@ -23,39 +25,39 @@ const getCSRFToken = function(callback) {
 		"User-Agent": 'Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/58.0.3029.110 Safari/537.36'
 	  }
 	};
-	
+
 	// Making the https get call
     let getReq = https.request(options, function(res) {
         res.on('data', function(data) {
 			body += data;
         });
-		
+
 		res.on('end', function() {
 			//console.log(body);
 			let searchString = 'var csrfMagicToken = "';
 			let indexStart = body.indexOf(searchString) + searchString.length;
 			//console.log(indexStart);
 			let indexEnd = body.indexOf('";', indexStart);
-			
+
 			let csrfString = body.substring(indexStart, indexEnd);
 			//console.log(csrfString);
-			
+
 			return callback(null, csrfString);
         });
     });
-	
+
 	// End the request
     getReq.end();
     getReq.on('error', function(err){
         return callback(err);
-    }); 
+    });
 }
 
 // true = enabled
 // false = disabled
 const checkRuleStatus = function(ruleid, callback) {
 	let body = "";
-	
+
 	let options = {
 	  host: config.pfsense.host,
 	  port: config.pfsense.port,
@@ -71,43 +73,43 @@ const checkRuleStatus = function(ruleid, callback) {
 		"User-Agent": 'Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/58.0.3029.110 Safari/537.36'
 	  }
 	};
-	
+
 	// Making the https get call
     let getReq = https.request(options, function(res) {
         res.on('data', function(data) {
 			body += data;
         });
-		
+
 		res.on('end', function() {
 			//console.log(body);
 			let searchString = "document.location='firewall_rules_edit.php?id=" + ruleid +"'";
 			let indexStart = body.indexOf(searchString) + searchString.length;
-			
+
 			let string = body.substring(indexStart, indexStart + 20);
-			
+
 			let ruleEnabled = false;
 			let index = string.indexOf('disabled');
 			if (index === -1) ruleEnabled = true;
 			return callback(null, ruleEnabled);
         });
     });
-	
+
 	// End the request
     getReq.end();
     getReq.on('error', function(err){
         return callback(err);
-    }); 	
+    });
 }
 
 const applyFirewallRule = function(callback) {
 	getCSRFToken(function(err, csrfToken) {
 		let body = '';
-		
+
 		let post_data = querystring.stringify({
 		  '__csrf_magic': csrfToken,
 		  'apply': 'Apply Changes',
 		});
-		
+
 		let options = {
 		  host: config.pfsense.host,
 		  port: config.pfsense.port,
@@ -129,31 +131,31 @@ const applyFirewallRule = function(callback) {
 			'User-Agent': 'Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/58.0.3029.110 Safari/537.36'
 		  }
 		};
-		
+
 		// Making the https post call
 		let postReq = https.request(options, function(res) {
 			res.on('data', function(data) {
 				body += data;
 			});
-			
+
 			res.on('end', function() {
 				return callback(null);
 			});
 		});
-		
+
 		postReq.write(post_data);
 		// End the request
 		postReq.end();
 		postReq.on('error', function(err){
 			return callback(err);
-		}); 
+		});
 	});
 }
 
 const toggleFirewallRule = function(ruleId, callback) {
 	let togglePath = config.pfsense.rules.toggle.path;
 	togglePath = togglePath.replace('{id}', ruleId);
-	
+
 	let options = {
 	  host: config.pfsense.host,
 	  port: config.pfsense.port,
@@ -169,23 +171,23 @@ const toggleFirewallRule = function(ruleId, callback) {
 		"User-Agent": 'Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/58.0.3029.110 Safari/537.36'
 	  }
 	};
-	
+
 	// Making the https get call
     let getReq = https.request(options, function(res) {
         res.on('data', function(data) {
 
         });
-		
+
 		res.on('end', function() {
 			return callback(null);
         });
     });
-	
+
 	// End the request
     getReq.end();
     getReq.on('error', function(err){
         return callback(err);
-    }); 
+    });
 }
 
 const getMonthQuotaBytes = function() {
@@ -205,12 +207,12 @@ const getTodayQuota = function(callback) {
 		if (err) return callback(err);
 		getTodayUsageBytes(function(err, todayBytes) {
 			if (err) return callback(err);
-			
+
 			// This is the Quota that was remaining at 00:00 today
 			let quotaLeft = monthBytesLeft + todayBytes;
-			
+
 			let averageQuotaLeft = quotaLeft / getDaysLeftMonth();
-			
+
 			return callback(null, averageQuotaLeft);
 		});
 	});
@@ -221,9 +223,9 @@ const getTodayQuotaLeft = function(callback) {
 		if (err) return callback(err);
 		getTodayUsageBytes(function(err, todayBytes) {
 			if (err) return callback(err);
-			
+
 			let todayQuotaLeftBytes = todayQuotaBytes - todayBytes;
-			
+
 			return callback(null, todayQuotaLeftBytes);
 		});
 	});
@@ -233,7 +235,7 @@ const getTodayQuotaLeft = function(callback) {
 const getMonthQuotaLeft = function(callback) {
 	getCurrentMonthUsage(function(err, monthUsage) {
 		if (err) return callback(err);
-		
+
 		let currentMonthBytes = monthUsage * 1024;
 		return callback(null, getMonthQuotaBytes() - currentMonthBytes);
 	});
@@ -261,7 +263,7 @@ const getNetworkUsageStats = function(callback) {
 		"User-Agent": 'Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/58.0.3029.110 Safari/537.36'
 	  }
 	};
-	
+
 	// Making the https get call
     let getReq = https.request(options, function(res) {
 		let body = '';
@@ -272,7 +274,7 @@ const getNetworkUsageStats = function(callback) {
         res.on('data', function(data) {
 			body += data;
         });
-		
+
 		res.on('end', function() {
 			try {
 				reply.data = JSON.parse(body)
@@ -282,12 +284,12 @@ const getNetworkUsageStats = function(callback) {
 			return callback(null, reply);
         });
     });
-	
+
 	// End the request
     getReq.end();
     getReq.on('error', function(err){
         return callback(err);
-    }); 
+    });
 }
 
 const getCurrentMonthUsage = function(callback) {
@@ -296,9 +298,9 @@ const getCurrentMonthUsage = function(callback) {
 
 		let currentMonthBits = reply.data.interfaces[0].traffic.months[0].rx;
 		currentMonthBits += reply.data.interfaces[0].traffic.months[0].tx;
-		
+
 		return callback(null, currentMonthBits);
-	}); 
+	});
 }
 
 const getTodayUsageBytes = function(callback) {
@@ -307,9 +309,9 @@ const getTodayUsageBytes = function(callback) {
 
 		let todayBytes = reply.data.interfaces[0].traffic.days[0].rx;
 		todayBytes += reply.data.interfaces[0].traffic.days[0].tx;
-		
+
 		return callback(null, todayBytes * 1024);
-	}); 
+	});
 }
 
 // this function is called at a interval to check if we went over usage
@@ -325,17 +327,17 @@ const check = function() {
 					console.log('Allowed quota today: ' + pretty(bytesLeft, false, false, 3));
 					getTodayQuotaLeft(function(err, bytesLeft) {
 						console.log('Allowed quota left: ' + pretty(bytesLeft, false, false, 3));
-						
+
 						if (bytesLeft <= 0) {
 							checkRuleStatus(config.pfsense.blockRuleId, function(err, enabled){
 								if (!enabled) {
 									console.log('Enabling the block rule');
 									toggleFirewallRule(config.pfsense.blockRuleId, function(err) {
 										if (err) return console.log(err);
-										
+
 										applyFirewallRule(function(err){
 											if (err) return console.log(err);
-											
+
 											console.log('Successfully enabled the block rule');;
 										});
 									});
@@ -348,10 +350,10 @@ const check = function() {
 									console.log('Disabling the block rule');
 									toggleFirewallRule(config.pfsense.blockRuleId, function(err) {
 										if (err) return console.log(err);
-										
+
 										applyFirewallRule(function(err){
 											if (err) return console.log(err);
-											
+
 											console.log('Successfully disabled the block rule');;
 										});
 									});
@@ -363,14 +365,14 @@ const check = function() {
 			});
 		});
 	});
-	
+
 	// Loop the timer
 	checkTimeout = setTimeout(check, config.checkInterval); // Call the check function at the defined rate
 }
 
 // Starting Function
 const run = function() {
-	check(); // Call the function immediately 
+	check(); // Call the function immediately
 }
 
 // Starting point
